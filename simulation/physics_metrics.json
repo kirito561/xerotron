@@ -1,0 +1,136 @@
+{
+  "total_frames": 219,
+  "start_xyz": [
+    0.0,
+    -0.0,
+    0.1817
+  ],
+  "end_xyz": [
+    0.2298,
+    0.0021,
+    0.1818
+  ],
+  "net_forward_x_m": 0.2298,
+  "overall_max_abs_roll_deg": 3.28,
+  "overall_max_abs_pitch_deg": 13.36,
+  "total_body_ground_contacts": 0,
+  "per_state": {
+    "IDLE": {
+      "frames": 15,
+      "delta_x_m": -0.0073,
+      "delta_y_m": -0.0023,
+      "avg_height_m": 0.1855,
+      "min_height_m": 0.1817,
+      "max_abs_roll_deg": 0.66,
+      "max_abs_pitch_deg": 12.37,
+      "avg_feet_in_contact": 3.13,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0109,
+      "upright": true
+    },
+    "STAND": {
+      "frames": 26,
+      "delta_x_m": -0.0507,
+      "delta_y_m": 0.0,
+      "avg_height_m": 0.1847,
+      "min_height_m": 0.18,
+      "max_abs_roll_deg": 0.01,
+      "max_abs_pitch_deg": 13.36,
+      "avg_feet_in_contact": 2.12,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0458,
+      "upright": true
+    },
+    "WALK": {
+      "frames": 54,
+      "delta_x_m": 0.1287,
+      "delta_y_m": -0.0048,
+      "avg_height_m": 0.1765,
+      "min_height_m": 0.1733,
+      "max_abs_roll_deg": 3.28,
+      "max_abs_pitch_deg": 11.47,
+      "avg_feet_in_contact": 1.37,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0681,
+      "upright": true
+    },
+    "TROT": {
+      "frames": 24,
+      "delta_x_m": 0.0918,
+      "delta_y_m": 0.0062,
+      "avg_height_m": 0.1781,
+      "min_height_m": 0.1737,
+      "max_abs_roll_deg": 2.37,
+      "max_abs_pitch_deg": 7.03,
+      "avg_feet_in_contact": 1.0,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0576,
+      "upright": true
+    },
+    "STOP": {
+      "frames": 22,
+      "delta_x_m": 0.0305,
+      "delta_y_m": -0.0048,
+      "avg_height_m": 0.1763,
+      "min_height_m": 0.1751,
+      "max_abs_roll_deg": 1.62,
+      "max_abs_pitch_deg": 5.6,
+      "avg_feet_in_contact": 2.64,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0495,
+      "upright": true
+    },
+    "WAVE": {
+      "frames": 24,
+      "delta_x_m": 0.0036,
+      "delta_y_m": 0.0,
+      "avg_height_m": 0.1743,
+      "min_height_m": 0.1742,
+      "max_abs_roll_deg": 0.04,
+      "max_abs_pitch_deg": 2.97,
+      "avg_feet_in_contact": 2.33,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0345,
+      "upright": true
+    },
+    "DANCE": {
+      "frames": 24,
+      "delta_x_m": 0.0131,
+      "delta_y_m": 0.0068,
+      "avg_height_m": 0.176,
+      "min_height_m": 0.1732,
+      "max_abs_roll_deg": 1.57,
+      "max_abs_pitch_deg": 4.62,
+      "avg_feet_in_contact": 1.46,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.1316,
+      "upright": true
+    },
+    "SIT": {
+      "frames": 15,
+      "delta_x_m": -0.0029,
+      "delta_y_m": -0.0068,
+      "avg_height_m": 0.174,
+      "min_height_m": 0.1732,
+      "max_abs_roll_deg": 2.3,
+      "max_abs_pitch_deg": 4.78,
+      "avg_feet_in_contact": 2.93,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.0351,
+      "upright": true
+    },
+    "FAULT": {
+      "frames": 15,
+      "delta_x_m": 0.0211,
+      "delta_y_m": 0.0064,
+      "avg_height_m": 0.1867,
+      "min_height_m": 0.1796,
+      "max_abs_roll_deg": 1.85,
+      "max_abs_pitch_deg": 11.25,
+      "avg_feet_in_contact": 1.13,
+      "body_ground_contact_frames": 0,
+      "max_joint_tracking_err_rad": 0.7317,
+      "upright": true
+    }
+  }
+}

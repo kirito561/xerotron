@@ -1,0 +1,254 @@
+<?xml version="1.0"?>
+<!-- =========================================================================
+     XEROTON — Compact DIY 8-DOF Servo Quadruped Robot Dog (Reference 2 Match)
+     Proportions:
+       - Central Body : 0.220 m (L) x 0.132 m (W) x 0.068 m (H), 0.95 kg
+       - Hip Origins  : x = +/-0.080 m, y = +/-0.090 m, z = -0.004 m (clear of body)
+       - Upper Legs   : L1 = 0.080 m (with visible hip & knee micro-servos), 0.09 kg
+       - Lower Legs   : L2 = 0.082 m + rounded foot sphere r = 0.016 m, 0.07 kg
+       - Total Mass   : 1.59 kg | Standing Height : ~0.175 m (compact low-profile)
+
+     Joints (8 revolute, Y-axis pitch, exact 8-DOF mapping preserved):
+       j0: front_left_hip    j1: front_left_knee
+       j2: front_right_hip   j3: front_right_knee
+       j4: rear_left_hip     j5: rear_left_knee
+       j6: rear_right_hip    j7: rear_right_knee
+     ========================================================================= -->
+<robot name="xeroton">
+
+  <material name="bronze_body">
+    <color rgba="0.39 0.25 0.18 1.0"/>
+  </material>
+  <material name="dark_frame">
+    <color rgba="0.14 0.12 0.12 1.0"/>
+  </material>
+  <material name="pink_ear">
+    <color rgba="0.92 0.48 0.68 1.0"/>
+  </material>
+  <material name="oled_black">
+    <color rgba="0.04 0.05 0.07 1.0"/>
+  </material>
+  <material name="servo_black">
+    <color rgba="0.11 0.12 0.14 1.0"/>
+  </material>
+  <material name="linkage_tan">
+    <color rgba="0.54 0.38 0.28 1.0"/>
+  </material>
+  <material name="wire_orange">
+    <color rgba="0.96 0.56 0.12 1.0"/>
+  </material>
+  <material name="foot_rubber">
+    <color rgba="0.10 0.10 0.12 1.0"/>
+  </material>
+
+  <!-- =======================================================================
+       COMPACT CENTRAL BODY ENCLOSURE (0.220 x 0.132 x 0.068 m, 0.95 kg)
+       ======================================================================= -->
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.95"/>
+      <inertia ixx="0.00174" ixy="0" ixz="0" iyy="0.00420" iyz="0" izz="0.00521"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.220 0.132 0.068"/></geometry>
+      <material name="bronze_body"/>
+    </visual>
+    <visual>
+      <origin xyz="0.112 0 0.002" rpy="0 0 0"/>
+      <geometry><box size="0.010 0.098 0.054"/></geometry>
+      <material name="oled_black"/>
+    </visual>
+    <!-- Pink decorative ear-like details near the front OLED face -->
+    <visual>
+      <origin xyz="0.094 0.044 0.045" rpy="0.25 -0.10 0.08"/>
+      <geometry><box size="0.014 0.022 0.026"/></geometry>
+      <material name="pink_ear"/>
+    </visual>
+    <visual>
+      <origin xyz="0.094 -0.044 0.045" rpy="-0.25 -0.10 -0.08"/>
+      <geometry><box size="0.014 0.022 0.026"/></geometry>
+      <material name="pink_ear"/>
+    </visual>
+    <!-- Four side hip micro-servo housings -->
+    <visual><origin xyz="0.080 0.074 -0.004" rpy="0 0 0"/><geometry><box size="0.032 0.020 0.034"/></geometry><material name="servo_black"/></visual>
+    <visual><origin xyz="0.080 -0.074 -0.004" rpy="0 0 0"/><geometry><box size="0.032 0.020 0.034"/></geometry><material name="servo_black"/></visual>
+    <visual><origin xyz="-0.080 0.074 -0.004" rpy="0 0 0"/><geometry><box size="0.032 0.020 0.034"/></geometry><material name="servo_black"/></visual>
+    <visual><origin xyz="-0.080 -0.074 -0.004" rpy="0 0 0"/><geometry><box size="0.032 0.020 0.034"/></geometry><material name="servo_black"/></visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.220 0.132 0.068"/></geometry>
+    </collision>
+  </link>
+
+  <!-- =======================================================================
+       FRONT-LEFT LEG (j0: front_left_hip, j1: front_left_knee)
+       ======================================================================= -->
+  <link name="fl_upper">
+    <inertial>
+      <origin xyz="0 0 -0.040" rpy="0 0 0"/>
+      <mass value="0.09"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00006" iyz="0" izz="0.000015"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.080"/></geometry><material name="linkage_tan"/></visual>
+    <visual><origin xyz="0 0 -0.080" rpy="0 0 0"/><geometry><box size="0.028 0.024 0.028"/></geometry><material name="servo_black"/></visual>
+    <collision><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.074"/></geometry></collision>
+  </link>
+
+  <link name="fl_lower">
+    <inertial>
+      <origin xyz="0 0 -0.041" rpy="0 0 0"/>
+      <mass value="0.07"/>
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.000045" iyz="0" izz="0.00001"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.041" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.080"/></geometry><material name="bronze_body"/></visual>
+    <visual><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry><material name="foot_rubber"/></visual>
+    <collision><origin xyz="0 0 -0.038" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.068"/></geometry></collision>
+    <collision><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry></collision>
+  </link>
+
+  <joint name="front_left_hip" type="revolute">
+    <parent link="base"/><child link="fl_upper"/>
+    <origin xyz="0.080 0.092 -0.004" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.95" upper="0.95" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <joint name="front_left_knee" type="revolute">
+    <parent link="fl_upper"/><child link="fl_lower"/>
+    <origin xyz="0 0 -0.080" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.10" upper="1.10" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <!-- =======================================================================
+       FRONT-RIGHT LEG (j2: front_right_hip, j3: front_right_knee)
+       ======================================================================= -->
+  <link name="fr_upper">
+    <inertial>
+      <origin xyz="0 0 -0.040" rpy="0 0 0"/>
+      <mass value="0.09"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00006" iyz="0" izz="0.000015"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.080"/></geometry><material name="linkage_tan"/></visual>
+    <visual><origin xyz="0 0 -0.080" rpy="0 0 0"/><geometry><box size="0.028 0.024 0.028"/></geometry><material name="servo_black"/></visual>
+    <collision><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.074"/></geometry></collision>
+  </link>
+
+  <link name="fr_lower">
+    <inertial>
+      <origin xyz="0 0 -0.041" rpy="0 0 0"/>
+      <mass value="0.07"/>
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.000045" iyz="0" izz="0.00001"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.041" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.080"/></geometry><material name="bronze_body"/></visual>
+    <visual><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry><material name="foot_rubber"/></visual>
+    <collision><origin xyz="0 0 -0.038" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.068"/></geometry></collision>
+    <collision><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry></collision>
+  </link>
+
+  <joint name="front_right_hip" type="revolute">
+    <parent link="base"/><child link="fr_upper"/>
+    <origin xyz="0.080 -0.092 -0.004" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.95" upper="0.95" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <joint name="front_right_knee" type="revolute">
+    <parent link="fr_upper"/><child link="fr_lower"/>
+    <origin xyz="0 0 -0.080" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.10" upper="1.10" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <!-- =======================================================================
+       REAR-LEFT LEG (j4: rear_left_hip, j5: rear_left_knee)
+       ======================================================================= -->
+  <link name="rl_upper">
+    <inertial>
+      <origin xyz="0 0 -0.040" rpy="0 0 0"/>
+      <mass value="0.09"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00006" iyz="0" izz="0.000015"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.080"/></geometry><material name="linkage_tan"/></visual>
+    <visual><origin xyz="0 0 -0.080" rpy="0 0 0"/><geometry><box size="0.028 0.024 0.028"/></geometry><material name="servo_black"/></visual>
+    <collision><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.074"/></geometry></collision>
+  </link>
+
+  <link name="rl_lower">
+    <inertial>
+      <origin xyz="0 0 -0.041" rpy="0 0 0"/>
+      <mass value="0.07"/>
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.000045" iyz="0" izz="0.00001"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.041" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.080"/></geometry><material name="bronze_body"/></visual>
+    <visual><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry><material name="foot_rubber"/></visual>
+    <collision><origin xyz="0 0 -0.038" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.068"/></geometry></collision>
+    <collision><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry></collision>
+  </link>
+
+  <joint name="rear_left_hip" type="revolute">
+    <parent link="base"/><child link="rl_upper"/>
+    <origin xyz="-0.080 0.092 -0.004" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.95" upper="0.95" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <joint name="rear_left_knee" type="revolute">
+    <parent link="rl_upper"/><child link="rl_lower"/>
+    <origin xyz="0 0 -0.080" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.10" upper="1.10" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <!-- =======================================================================
+       REAR-RIGHT LEG (j6: rear_right_hip, j7: rear_right_knee)
+       ======================================================================= -->
+  <link name="rr_upper">
+    <inertial>
+      <origin xyz="0 0 -0.040" rpy="0 0 0"/>
+      <mass value="0.09"/>
+      <inertia ixx="0.00006" ixy="0" ixz="0" iyy="0.00006" iyz="0" izz="0.000015"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.080"/></geometry><material name="linkage_tan"/></visual>
+    <visual><origin xyz="0 0 -0.080" rpy="0 0 0"/><geometry><box size="0.028 0.024 0.028"/></geometry><material name="servo_black"/></visual>
+    <collision><origin xyz="0 0 -0.040" rpy="0 0 0"/><geometry><box size="0.024 0.018 0.074"/></geometry></collision>
+  </link>
+
+  <link name="rr_lower">
+    <inertial>
+      <origin xyz="0 0 -0.041" rpy="0 0 0"/>
+      <mass value="0.07"/>
+      <inertia ixx="0.000045" ixy="0" ixz="0" iyy="0.000045" iyz="0" izz="0.00001"/>
+    </inertial>
+    <visual><origin xyz="0 0 -0.041" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.080"/></geometry><material name="bronze_body"/></visual>
+    <visual><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry><material name="foot_rubber"/></visual>
+    <collision><origin xyz="0 0 -0.038" rpy="0 0 0"/><geometry><box size="0.018 0.016 0.068"/></geometry></collision>
+    <collision><origin xyz="0 0 -0.082" rpy="0 0 0"/><geometry><sphere radius="0.016"/></geometry></collision>
+  </link>
+
+  <joint name="rear_right_hip" type="revolute">
+    <parent link="base"/><child link="rr_upper"/>
+    <origin xyz="-0.080 -0.092 -0.004" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.95" upper="0.95" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+  <joint name="rear_right_knee" type="revolute">
+    <parent link="rr_upper"/><child link="rr_lower"/>
+    <origin xyz="0 0 -0.080" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.10" upper="1.10" effort="14" velocity="6.0"/>
+    <dynamics damping="0.10" friction="0.03"/>
+  </joint>
+
+</robot>

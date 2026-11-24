@@ -1,0 +1,23 @@
+# Local Python / Micromamba Environment
+.env/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Large / Regenerable Verilog Simulation Outputs
+# Regenerate with build_verilog.bat and run_verilog.bat
+simulation/*.vcd
+simulation/*.vvp
+simulation/live_*.csv
+simulation/verilog_sim.log
+simulation/diagnostics/
+simulation/baseline_*
+simulation/v2_*
+simulation/v3_*
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+*.tmp

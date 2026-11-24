@@ -1,0 +1,2 @@
+pybullet>=3.2.5
+pytest>=8.0.0

@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XEROTON Studio 3.0 — Verilog RTL + PyBullet Robotics Environment</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div id="shell">
+  <!-- TOP CONTROL-ROOM BAR -->
+  <header id="topbar">
+    <div class="top-left">
+      <div class="brand-box">
+        <div class="brand-mark">X</div>
+        <div>
+          <div class="brand-name">XEROTON STUDIO 3.0</div>
+          <div class="brand-sub">8-DOF VERILOG RTL + PYBULLET</div>
+        </div>
+      </div>
+      <div class="pill ok" id="rtlConnPill"><span class="dot"></span><span id="rtlConnText">RTL: CHECKING...</span></div>
+      <div class="pill cyan" id="srcPill">SOURCE: VERILOG_CSV</div>
+      <div class="pill cyan" id="statePill">STATE: IDLE</div>
+    </div>
+
+    <div class="top-center">
+      <div class="sim-bar">
+        <button class="tbtn primary" data-sim="START" title="Start / Resume Simulation">Start</button>
+        <button class="tbtn" data-sim="PAUSE" id="topPauseBtn">Pause</button>
+        <button class="tbtn" data-sim="RESUME">Resume</button>
+        <button class="tbtn" data-sim="STEP" title="Single-step +1 Verilog frame (20 ms)">Step +20ms</button>
+        <button class="tbtn" data-sim="SIM_STOP">Stop</button>
+        <button class="tbtn" data-sim="RESET">Reset</button>
+        <select id="speedSelect" class="tbtn" style="background:#0a101d;">
+          <option value="0.25">0.25×</option>
+          <option value="0.5">0.5×</option>
+          <option value="1.0" selected>1.0×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2.0">2.0×</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="top-right">
+      <button class="tbtn estop" id="globalEstopBtn">E-STOP</button>
+    </div>
+  </header>
+
+  <!-- PERSISTENT SAFETY FAULT BANNER -->
+  <div id="fault-banner">
+    <div class="fault-msg">
+      <span>FAULT LOCKOUT ACTIVE</span>
+      <span class="fault-code-tag" id="bannerFaultCode">0b0001</span>
+      <span id="bannerFaultReason">Emergency stop asserted</span>
+    </div>
+    <button class="tbtn" style="background:#fff;color:#991b1b;font-weight:800;" id="clearFaultBtn">DELIBERATE RESET &amp; CLEAR FAULT</button>
+  </div>
+
+  <!-- WORKSPACE: LEFT NAV + STAGE -->
+  <div id="workspace">
+    <nav id="nav-rail">
+      <div class="nav-group">Mission Control</div>
+      <button class="nav-item active" data-sec="overview"><span>Overview</span><span class="nav-num">01</span></button>
+      <button class="nav-item" data-sec="pilot"><span>Manual Pilot</span><span class="nav-num">02</span></button>
+      <button class="nav-item" data-sec="simulation"><span>Robot Simulation</span><span class="nav-num">03</span></button>
+      <div class="nav-group">Control &amp; Hardware</div>
+      <button class="nav-item" data-sec="verilog"><span>Verilog Control</span><span class="nav-num">04</span></button>
+      <button class="nav-item" data-sec="joints"><span>Joint Control</span><span class="nav-num">05</span></button>
+      <button class="nav-item" data-sec="pwm"><span>PWM Analyzer</span><span class="nav-num">06</span></button>
+      <div class="nav-group">Physics &amp; Research</div>
+      <button class="nav-item" data-sec="telemetry"><span>Sensor Telemetry</span><span class="nav-num">07</span></button>
+      <button class="nav-item" data-sec="gait"><span>Gait Laboratory</span><span class="nav-num">08</span></button>
+      <button class="nav-item" data-sec="jarvis"><span>JARVIS Assistant</span><span class="nav-num">09</span></button>
+      <div class="nav-group">Verification</div>
+      <button class="nav-item" data-sec="testing"><span>Testing &amp; Diagnostics</span><span class="nav-num">10</span></button>
+      <button class="nav-item" data-sec="architecture"><span>System Architecture</span><span class="nav-num">11</span></button>
+    </nav>
+
+    <main id="content">
+      <div id="stage-grid">
+        <!-- PERSISTENT 3D WEBGL VIEWPORT -->
+        <section id="viewport-pane">
+          <canvas id="canvas3d"></canvas>
+
+          <div class="vp-overlay-top">
+            <div class="vp-bar" id="viewModeBar">
+              <span style="font-size:10px;color:#8a9ab8;font-weight:700;padding:0 4px;">VIEW</span>
+              <button class="tbtn active" data-vmode="normal">Normal</button>
+              <button class="tbtn" data-vmode="wireframe">Wireframe</button>
+              <button class="tbtn" data-vmode="skeleton">Skeleton</button>
+              <button class="tbtn" data-vmode="collision">Collision</button>
+              <button class="tbtn" data-vmode="transparent">Transparent</button>
+            </div>
+            <div class="vp-bar">
+              <span id="vpTimeBadge" style="font-family:Consolas,monospace;font-size:11px;color:#22d3ee;">t=0.00s · F000</span>
+            </div>
+          </div>
+
+          <div class="vp-overlay-bot">
+            <div class="vp-bar" id="camPresetBar">
+              <button class="tbtn active" data-cam="hero">3/4</button>
+              <button class="tbtn" data-cam="front">Front</button>
+              <button class="tbtn" data-cam="rear">Rear</button>
+              <button class="tbtn" data-cam="side">Side</button>
+              <button class="tbtn" data-cam="top">Top</button>
+              <button class="tbtn" data-cam="face">OLED</button>
+              <button class="tbtn active" id="followToggleBtn">Follow</button>
+              <button class="tbtn" id="resetCamBtn">Reset Cam</button>
+            </div>
+            <div class="vp-bar">
+              <div class="paw-leds">
+                <div class="paw-led" id="led-fl"><i></i>FL</div>
+                <div class="paw-led" id="led-fr"><i></i>FR</div>
+                <div class="paw-led" id="led-rl"><i></i>RL</div>
+                <div class="paw-led" id="led-rr"><i></i>RR</div>
+              </div>
+              <span id="vpPoseTxt" style="font-family:Consolas,monospace;font-size:11px;color:#cbd5e1;">X:+0.00 Z:0.32</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT / FULL SECTION WORKSPACE -->
+        <section id="section-pane">
+
+          <!-- 01. OVERVIEW -->
+          <div class="section-view active" id="sec-overview">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">01 · Mission Overview</div>
+                <div class="sec-sub">Live Verilog RTL + 250 Hz PyBullet 8-DOF Quadruped Control Room</div>
+              </div>
+              <button class="tbtn primary" data-rtl="DEMO">Replay Verified Demo</button>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">OLED Robot Face (Live Sync)</span>
+                <span id="ovEmotion" style="font-family:Consolas,monospace;font-size:11px;color:#22d3ee;">IDLE</span>
+              </div>
+              <div id="oled-box"><canvas id="oledMirror" width="380" height="108"></canvas></div>
+            </div>
+
+            <div class="grid-2">
+              <div class="kpi"><div class="k">FSM State / Prev</div><div class="v" id="ovState">IDLE</div><div class="s" id="ovPrev">Prev: IDLE</div></div>
+              <div class="kpi"><div class="k">Control Source</div><div class="v" id="ovSrc" style="font-size:12px;">VERILOG_CSV</div><div class="s" id="ovRtlMs">50.00 Hz (20 ms)</div></div>
+              <div class="kpi"><div class="k">Body Pose (X, Z)</div><div class="v" id="ovPos">+0.00 / 0.32m</div><div class="s" id="ovRpy">R:+0.0° P:+0.0°</div></div>
+              <div class="kpi"><div class="k">Safety Supervisor</div><div class="v" id="ovFault">OK</div><div class="s" id="ovFeet">Contacts: 4/4</div></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">Manual Pilot (Hold-to-Move · WASD + QE)</span>
+                <button class="tbtn" data-goto="pilot">Settings &amp; Speed</button>
+              </div>
+              <div class="pilot-dpad">
+                <div></div>
+                <button class="pilot-btn" data-pilot-key="KeyW"><span class="pk">W</span><span class="pl">FORWARD</span></button>
+                <div></div>
+                <button class="pilot-btn" data-pilot-key="KeyA"><span class="pk">A</span><span class="pl">LEFT (STRAFE)</span></button>
+                <button class="pilot-btn stop-btn" data-pilot-stop="1"><span class="pk">SPACE</span><span class="pl">STOP</span></button>
+                <button class="pilot-btn" data-pilot-key="KeyD"><span class="pk">D</span><span class="pl">RIGHT (STRAFE)</span></button>
+                <div></div>
+                <button class="pilot-btn" data-pilot-key="KeyS"><span class="pk">S</span><span class="pl">BACKWARD</span></button>
+                <div></div>
+              </div>
+              <div class="pilot-row-3">
+                <button class="pilot-btn" data-pilot-key="KeyQ"><span class="pk">Q</span><span class="pl">TURN LEFT</span></button>
+                <button class="pilot-btn" data-pilot-stand="1"><span class="pk">R</span><span class="pl">STAND POSE</span></button>
+                <button class="pilot-btn" data-pilot-key="KeyE"><span class="pk">E</span><span class="pl">TURN RIGHT</span></button>
+              </div>
+              <div class="pilot-vec-bar" style="margin-top:8px;">
+                <div>vx: <span id="ovVx" style="color:#22d3ee;">0.00</span></div>
+                <div>vy: <span id="ovVy" style="color:#34d399;">0.00</span></div>
+                <div>wz: <span id="ovWz" style="color:#60a5fa;">0.00</span></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Quick Verilog RTL Poses</span><span style="font-size:10px;color:#8a9ab8;">Executes real vvp RTL</span></div>
+              <div class="cmd-grid">
+                <button class="cmd-btn" data-rtl="STAND"><span class="lbl">STAND</span><span class="sub">CMD 1</span></button>
+                <button class="cmd-btn" data-rtl="IDLE"><span class="lbl">IDLE</span><span class="sub">CMD 0</span></button>
+                <button class="cmd-btn" data-rtl="WAVE"><span class="lbl">WAVE</span><span class="sub">CMD 4</span></button>
+                <button class="cmd-btn" data-rtl="DANCE"><span class="lbl">DANCE</span><span class="sub">CMD 5</span></button>
+                <button class="cmd-btn" data-rtl="SIT"><span class="lbl">SIT</span><span class="sub">CMD 6</span></button>
+                <button class="cmd-btn" data-rtl="SLEEP"><span class="lbl">SLEEP</span><span class="sub">CMD 8</span></button>
+                <button class="cmd-btn" data-rtl="TROT"><span class="lbl">TROT</span><span class="sub">CMD 7</span></button>
+                <button class="cmd-btn" data-rtl="STOP"><span class="lbl">STOP</span><span class="sub">CMD 3</span></button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Mini 8-Ch PWM Monitor</span><button class="tbtn" data-goto="pwm">Open Full Analyzer</button></div>
+              <canvas id="miniPwmCanvas" class="scope-canvas" width="360" height="145"></canvas>
+            </div>
+          </div>
+
+          <!-- 02. MANUAL PILOT CONTROL -->
+          <div class="section-view" id="sec-pilot">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">02 · Manual Pilot Control</div>
+                <div class="sec-sub">Dead-Man Hold-to-Move Control · Single Authoritative Command Manager</div>
+              </div>
+              <div class="pill cyan" id="pilotPriorityBadge">P2_STOP</div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">Directional Control Pad (Hold Key or Button)</span>
+                <span id="pilotDirBadge" style="font-family:Consolas,monospace;font-size:11px;color:#22d3ee;font-weight:800;">STOP</span>
+              </div>
+              <div class="pilot-dpad">
+                <div></div>
+                <button class="pilot-btn" data-pilot-key="KeyW"><span class="pk">W</span><span class="pl">FORWARD</span></button>
+                <div></div>
+                <button class="pilot-btn" data-pilot-key="KeyA"><span class="pk">A</span><span class="pl">LEFT (STRAFE)</span></button>
+                <button class="pilot-btn stop-btn" data-pilot-stop="1"><span class="pk">SPACE</span><span class="pl">STOP</span></button>
+                <button class="pilot-btn" data-pilot-key="KeyD"><span class="pk">D</span><span class="pl">RIGHT (STRAFE)</span></button>
+                <div></div>
+                <button class="pilot-btn" data-pilot-key="KeyS"><span class="pk">S</span><span class="pl">BACKWARD</span></button>
+                <div></div>
+              </div>
+              <div class="pilot-row-3">
+                <button class="pilot-btn" data-pilot-key="KeyQ"><span class="pk">Q</span><span class="pl">TURN LEFT</span></button>
+                <button class="pilot-btn stop-btn" data-pilot-stop="1"><span class="pk">STOP</span><span class="pl">IMMEDIATE HALT</span></button>
+                <button class="pilot-btn" data-pilot-key="KeyE"><span class="pk">E</span><span class="pl">TURN RIGHT</span></button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <button class="tbtn primary" data-pilot-stand="1" style="flex:1;min-width:160px;">Neutral Standing Pose (R)</button>
+                <button class="tbtn" data-sim="RESET">Reset Origin</button>
+              </div>
+              <div class="pilot-vec-bar" style="margin-top:8px;">
+                <div>vx: <span id="plVx" style="color:#22d3ee;">0.00</span></div>
+                <div>vy: <span id="plVy" style="color:#34d399;">0.00</span></div>
+                <div>wz: <span id="plWz" style="color:#60a5fa;">0.00</span></div>
+              </div>
+              <div style="margin-top:6px;font-size:10px;color:#8a9ab8;font-family:Consolas,monospace;">
+                Convention: REP-103 (+X Fwd, +Y Strafe Left, +Z Up, +wz Turn Left CCW). Releasing key or losing window focus stops safely.
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">Movement Settings &amp; Speed Presets</span>
+                <span id="presetLabel" style="font-family:Consolas,monospace;font-size:11px;color:#34d399;font-weight:800;">SLOW</span>
+              </div>
+              <div class="preset-row">
+                <button class="tbtn active" data-preset="SLOW">SLOW</button>
+                <button class="tbtn" data-preset="NORMAL">NORMAL</button>
+                <button class="tbtn" data-preset="FAST">FAST</button>
+              </div>
+              <div class="setting-row">
+                <div class="sr-top"><span>Walking Speed</span><span class="sr-val" id="valWalkSpeed">0.65×</span></div>
+                <input type="range" id="setWalkSpeed" min="0.30" max="1.50" step="0.05" value="0.65" />
+              </div>
+              <div class="setting-row">
+                <div class="sr-top"><span>Turning Speed</span><span class="sr-val" id="valTurnSpeed">0.70×</span></div>
+                <input type="range" id="setTurnSpeed" min="0.30" max="1.50" step="0.05" value="0.70" />
+              </div>
+              <div class="setting-row">
+                <div class="sr-top"><span>Stride Length (Verilog RTL)</span><span class="sr-val" id="valStrideUs">60 us</span></div>
+                <input type="range" id="setStrideUs" min="35" max="105" step="5" value="60" />
+              </div>
+              <div class="setting-row">
+                <div class="sr-top"><span>Gait Frequency (Frames/Phase)</span><span class="sr-val" id="valGaitFreq">6 fr (1.04 Hz)</span></div>
+                <input type="range" id="setPhaseFrames" min="2" max="8" step="1" value="6" />
+              </div>
+              <div class="setting-row">
+                <div class="sr-top"><span>Movement Smoothing</span><span class="sr-val" id="valSmoothing">0.55</span></div>
+                <input type="range" id="setSmoothing" min="0.20" max="1.00" step="0.05" value="0.55" />
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Live Authoritative System Status</span></div>
+              <div class="sys-status-grid">
+                <div class="sys-status-item"><span class="sk">RTL Connection</span><span class="sv ok" id="stRtl">CONNECTED</span></div>
+                <div class="sys-status-item"><span class="sk">Verilog Simulator</span><span class="sv ok" id="stSim">READY</span></div>
+                <div class="sys-status-item"><span class="sk">Python Bridge</span><span class="sv ok" id="stBridge">ACTIVE</span></div>
+                <div class="sys-status-item"><span class="sk">PyBullet Physics</span><span class="sv cyan" id="stPyb">RUNNING (250 Hz)</span></div>
+                <div class="sys-status-item"><span class="sk">Active Command</span><span class="sv cyan" id="stCmd">STAND</span></div>
+                <div class="sys-status-item"><span class="sk">FSM State / Gait</span><span class="sv cyan" id="stFsm">STAND</span></div>
+                <div class="sys-status-item"><span class="sk">Active Direction</span><span class="sv" id="stDir">STOP</span></div>
+                <div class="sys-status-item"><span class="sk">Physics Status</span><span class="sv ok" id="stPhys">RUNNING</span></div>
+              </div>
+              <div style="margin-top:8px;font-size:10px;color:#8a9ab8;line-height:1.4;">
+                <strong>8-DOF Kinematics Note:</strong> Forward, Backward, Turn Left &amp; Turn Right run 100% pure 8-joint PyBullet physics. Because an 8-DOF pitch-only chassis lacks 4 hip-abduction servos (12-DOF), Strafe Left/Right combines the Verilog 8-phase alternating lateral weight-shift gait with stance-foot contact-gated lateral ground coupling.
+              </div>
+            </div>
+          </div>
+
+          <!-- 02. ROBOT SIMULATION -->
+          <div class="section-view" id="sec-simulation">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">02 · 3D Robot Simulation</div>
+                <div class="sec-sub">PyBullet 250 Hz Rigid-Body Physics + 5 Engineering Visualization Modes</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="card-title">Visualization Mode</span></div>
+              <div class="grid-2" id="simViewBtns">
+                <button class="tbtn active" data-vmode="normal">Normal PBR Robot</button>
+                <button class="tbtn" data-vmode="wireframe">Wireframe Mesh</button>
+                <button class="tbtn" data-vmode="skeleton">Joint Skeleton</button>
+                <button class="tbtn" data-vmode="collision">URDF Collision Geometry</button>
+                <button class="tbtn" data-vmode="transparent" style="grid-column:span 2;">Transparent Engineering X-Ray</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="card-title">Camera Controls</span><span style="font-size:10px;color:#8a9ab8;">Left-drag Orbit · Right-drag Pan · Wheel Zoom</span></div>
+              <div class="grid-3">
+                <button class="tbtn" data-cam="hero">3/4 Hero</button>
+                <button class="tbtn" data-cam="front">Front</button>
+                <button class="tbtn" data-cam="rear">Rear</button>
+                <button class="tbtn" data-cam="side">Side</button>
+                <button class="tbtn" data-cam="top">Top</button>
+                <button class="tbtn" data-cam="face">OLED Face</button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button class="tbtn active" id="simFollowBtn" style="flex:1;">Follow Robot: ON</button>
+                <button class="tbtn" id="simResetCamBtn" style="flex:1;">Reset Camera</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="card-title">Simulation Transport &amp; Stepping</span></div>
+              <div class="grid-3">
+                <button class="tbtn primary" data-sim="START">Start</button>
+                <button class="tbtn" data-sim="PAUSE">Pause</button>
+                <button class="tbtn" data-sim="RESUME">Resume</button>
+                <button class="tbtn" data-sim="STEP">Single-Step (+20ms)</button>
+                <button class="tbtn" data-sim="SIM_STOP">Stop</button>
+                <button class="tbtn" data-sim="RESET">Reset Pose</button>
+              </div>
+              <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:#8a9ab8;">
+                <input type="checkbox" id="loopToggle" checked /> Continuous loop active RTL sequence
+              </label>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="card-title">Live Physics Status</span></div>
+              <div class="grid-2">
+                <div class="kpi"><div class="k">Sim Time</div><div class="v" id="simTimeVal">0.000 s</div></div>
+                <div class="kpi"><div class="k">Chassis Height Z</div><div class="v" id="simZVal">0.320 m</div></div>
+                <div class="kpi"><div class="k">Max Penetration</div><div class="v" id="simPenVal">0.00 mm</div></div>
+                <div class="kpi"><div class="k">Physics Errors</div><div class="v" id="simErrVal">0</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 03. VERILOG CONTROL -->
+          <div class="section-view" id="sec-verilog">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">03 · Verilog RTL Control Centre</div>
+                <div class="sec-sub">Direct observability of xeroton_top.v, gait_controller.v, safety_controller.v &amp; 8× servo_pwm.v</div>
+              </div>
+              <div class="pill ok" id="vcConnBadge">CONNECTED (Icarus Verilog)</div>
+            </div>
+
+            <div class="grid-4">
+              <div class="kpi"><div class="k">Current FSM State</div><div class="v" id="vcState">IDLE</div></div>
+              <div class="kpi"><div class="k">Previous FSM State</div><div class="v" id="vcPrevState">IDLE</div></div>
+              <div class="kpi"><div class="k">Command Input</div><div class="v" id="vcCmd">4'd0</div></div>
+              <div class="kpi"><div class="k">Frame Counter</div><div class="v" id="vcFrame">0</div></div>
+              <div class="kpi"><div class="k">Clock Parameters</div><div class="v" style="font-size:12px;">1 MHz sim</div><div class="s">FPGA param: 50 MHz</div></div>
+              <div class="kpi"><div class="k">Reset Status</div><div class="v" id="vcReset">DEASSERTED (0)</div></div>
+              <div class="kpi"><div class="k">Fault Register</div><div class="v" id="vcFaultReg">4'b0000</div><div class="s" id="vcFaultTxt">No active fault</div></div>
+              <div class="kpi"><div class="k">RTL Execution</div><div class="v" id="vcExecMs">0.0 ms</div><div class="s" id="vcExecSrc">VERILOG_CSV</div></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Explicit Verilog FSM Commands (4-bit Bus)</span><span style="font-size:10px;color:#8a9ab8;">Invokes real compiled vvp RTL</span></div>
+              <div class="grid-4">
+                <button class="cmd-btn" data-rtl="IDLE"><span class="lbl">IDLE</span><span class="sub">4'd0</span></button>
+                <button class="cmd-btn" data-rtl="STAND"><span class="lbl">STAND</span><span class="sub">4'd1</span></button>
+                <button class="cmd-btn" data-rtl="WALK_FORWARD"><span class="lbl">WALK FWD</span><span class="sub">4'd2</span></button>
+                <button class="cmd-btn" data-rtl="WALK_BACKWARD"><span class="lbl">WALK BACK</span><span class="sub">4'd9</span></button>
+                <button class="cmd-btn" data-rtl="STRAFE_LEFT"><span class="lbl">STRAFE L</span><span class="sub">4'd10</span></button>
+                <button class="cmd-btn" data-rtl="STRAFE_RIGHT"><span class="lbl">STRAFE R</span><span class="sub">4'd11</span></button>
+                <button class="cmd-btn" data-rtl="TURN_LEFT"><span class="lbl">TURN LEFT</span><span class="sub">4'd12</span></button>
+                <button class="cmd-btn" data-rtl="TURN_RIGHT"><span class="lbl">TURN RIGHT</span><span class="sub">4'd13</span></button>
+                <button class="cmd-btn" data-rtl="STOP"><span class="lbl">STOP</span><span class="sub">4'd3</span></button>
+                <button class="cmd-btn" data-rtl="WAVE"><span class="lbl">WAVE</span><span class="sub">4'd4</span></button>
+                <button class="cmd-btn" data-rtl="DANCE"><span class="lbl">DANCE</span><span class="sub">4'd5</span></button>
+                <button class="cmd-btn" data-rtl="TROT"><span class="lbl">TROT</span><span class="sub">4'd7</span></button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button class="tbtn" data-rtl="SIT">SIT (4'd6)</button>
+                <button class="tbtn" data-rtl="SLEEP">SLEEP (4'd8 · Closed Eyes)</button>
+                <button class="tbtn" style="border-color:#f59e0b;color:#fbbf24;" data-rtl="INVALID">Inject Invalid Command (4'd15 -> FAULT)</button>
+                <button class="tbtn estop" data-rtl="FAULT">Assert Hardware E-STOP</button>
+                <button class="tbtn primary" data-rtl="CLEAR_FAULT">Pulse fault_clear (Deliberate Reset)</button>
+                <button class="tbtn" data-rtl="DEMO">Load Verified Testbench CSV</button>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-h"><span class="card-title">8 Joint Target Registers (j0 .. j7)</span></div>
+                <table class="data-tbl">
+                  <thead><tr><th>Reg</th><th>Joint</th><th>Dec (us)</th><th>Hex (12-bit)</th><th>Duty (%)</th></tr></thead>
+                  <tbody id="vcRegTable"></tbody>
+                </table>
+              </div>
+              <div class="card">
+                <div class="card-h"><span class="card-title">FSM Transition &amp; Fault Log</span></div>
+                <table class="data-tbl">
+                  <thead><tr><th>Time</th><th>From</th><th>To</th><th>Cmd</th><th>Source</th></tr></thead>
+                  <tbody id="vcFsmLog"></tbody>
+                </table>
+                <div style="margin-top:10px;font-size:11px;color:#8a9ab8;font-weight:700;">Fault History</div>
+                <pre class="log-box" id="vcFaultHistory" style="max-height:110px;margin-top:4px;">No faults recorded.</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- 04. JOINT CONTROL -->
+          <div class="section-view" id="sec-joints">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">04 · Eight-Joint Control Panel</div>
+                <div class="sec-sub">Manual control routed through shared Safety Gate (never bypasses limits or E-STOP)</div>
+              </div>
+              <div class="pill cyan" id="jcSourceBadge">ACTIVE: VERILOG_CSV</div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Global &amp; Per-Leg Controls</span></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="tbtn primary" id="jcAllNeutralBtn">All-Joint Neutral (1500 us)</button>
+                <button class="tbtn" data-rtl="STAND">Return to Verilog RTL (STAND)</button>
+                <button class="tbtn estop" data-rtl="FAULT">Emergency Stop</button>
+              </div>
+              <div class="grid-4" style="margin-top:8px;">
+                <button class="tbtn" data-leg="FL">Lift FL Leg</button>
+                <button class="tbtn" data-leg="FR">Lift FR Leg</button>
+                <button class="tbtn" data-leg="RL">Lift RL Leg</button>
+                <button class="tbtn" data-leg="RR">Lift RR Leg</button>
+              </div>
+            </div>
+
+            <div id="jointSlidersHost" style="display:flex;flex-direction:column;gap:7px;"></div>
+          </div>
+
+          <!-- 05. REAL PWM ANALYZER -->
+          <div class="section-view" id="sec-pwm">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">05 · Real 8-Channel 50 Hz PWM Analyzer</div>
+                <div class="sec-sub">Live digital waveforms generated from actual Verilog RTL / safety-gated joint targets (50 Hz · 20.00 ms period)</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="tbtn" id="pwmPauseBtn">Pause Scope</button>
+                <a class="tbtn" href="/api/pwm_export?format=csv" download>Export CSV</a>
+                <a class="tbtn" href="/api/pwm_export?format=json" download>Export JSON</a>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">Oscilloscope Controls &amp; Channel Select</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <label style="font-size:11px;color:#8a9ab8;">Timebase:
+                    <select id="pwmTimebase" class="tbtn" style="background:#0a101d;">
+                      <option value="2500" selected>2.5 ms (Servo Pulse Zoom)</option>
+                      <option value="5000">5.0 ms</option>
+                      <option value="20000">20.0 ms (Full 50 Hz Frame)</option>
+                    </select>
+                  </label>
+                  <label style="font-size:11px;color:#8a9ab8;">Zoom:
+                    <input type="range" id="pwmZoom" min="1" max="4" step="0.5" value="1" style="width:70px;vertical-align:middle;" />
+                  </label>
+                </div>
+              </div>
+              <div id="pwmChannelChecks" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:Consolas,monospace;font-size:11px;"></div>
+              <canvas id="fullPwmCanvas" class="scope-canvas" width="960" height="320"></canvas>
+            </div>
+
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-h"><span class="card-title">Per-Channel Timing Measurements</span></div>
+                <table class="data-tbl">
+                  <thead><tr><th>Ch</th><th>Joint</th><th>Pulse (us)</th><th>Period</th><th>Freq</th><th>Duty Cycle</th></tr></thead>
+                  <tbody id="pwmMetricsTable"></tbody>
+                </table>
+              </div>
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-title">VCD Waveform Inspector (simulation/xeroton.vcd)</span>
+                  <button class="tbtn" id="refreshVcdBtn">Parse VCD</button>
+                </div>
+                <pre class="log-box" id="vcdSummaryBox">Click 'Parse VCD' to inspect simulation/xeroton.vcd...</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- 06. SENSOR TELEMETRY -->
+          <div class="section-view" id="sec-telemetry">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">06 · Robot Sensor Telemetry</div>
+                <div class="sec-sub">Real PyBullet rigid-body physics measurements</div>
+              </div>
+              <div class="pill warn">SIMULATED IMU ESTIMATE (No physical MPU6050 connected)</div>
+            </div>
+
+            <div class="grid-4">
+              <div class="kpi"><div class="k">Roll / Pitch / Yaw</div><div class="v" id="telRpy" style="font-size:13px;">0 / 0 / 0°</div><div class="s">Simulated IMU</div></div>
+              <div class="kpi"><div class="k">Body Position (m)</div><div class="v" id="telPos" style="font-size:12px;">0, 0, 0.32</div><div class="s">World X, Y, Z</div></div>
+              <div class="kpi"><div class="k">Body Velocity (m/s)</div><div class="v" id="telVel" style="font-size:12px;">0, 0, 0</div><div class="s">Linear vx, vy, vz</div></div>
+              <div class="kpi"><div class="k">Sim Time / Errors</div><div class="v" id="telTime">0.00s / 0</div><div class="s" id="telSlip">Slip: 0.00 m/s</div></div>
+            </div>
+
+            <div class="grid-2">
+              <div class="card"><div class="card-h"><span class="card-title">Roll &amp; Pitch (deg)</span></div><canvas id="gRollPitch" class="scope-canvas" width="460" height="140"></canvas></div>
+              <div class="card"><div class="card-h"><span class="card-title">Body Height Z (m)</span></div><canvas id="gHeight" class="scope-canvas" width="460" height="140"></canvas></div>
+              <div class="card"><div class="card-h"><span class="card-title">8 Joint Angles (rad)</span></div><canvas id="gJoints" class="scope-canvas" width="460" height="140"></canvas></div>
+              <div class="card"><div class="card-h"><span class="card-title">4-Foot Ground Contacts (FL, FR, RL, RR)</span></div><canvas id="gContacts" class="scope-canvas" width="460" height="140"></canvas></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Joint Positions, Velocities &amp; Tracking</span></div>
+              <table class="data-tbl">
+                <thead><tr><th>Joint</th><th>Target (rad)</th><th>Actual (rad)</th><th>Velocity (rad/s)</th><th>Pulse (us)</th></tr></thead>
+                <tbody id="telJointTable"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 07. GAIT LABORATORY -->
+          <div class="section-view" id="sec-gait">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">07 · Gait Laboratory</div>
+                <div class="sec-sub">Verilog RTL gait parameter experiments evaluated honestly in PyBullet physics</div>
+              </div>
+              <div class="pill warn" id="gaitStabBadge">EXPERIMENTAL</div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Gait Modes (Real Verilog RTL Commands)</span></div>
+              <div class="grid-4">
+                <button class="cmd-btn" data-gait="STAND"><span class="lbl">Stand</span><span class="sub">CMD 1</span></button>
+                <button class="cmd-btn" data-gait="WALK"><span class="lbl">Walk</span><span class="sub">CMD 2</span></button>
+                <button class="cmd-btn" data-gait="TROT"><span class="lbl">Trot</span><span class="sub">CMD 7</span></button>
+                <button class="cmd-btn" data-gait="WAVE"><span class="lbl">Wave</span><span class="sub">CMD 4</span></button>
+                <button class="cmd-btn" data-gait="DANCE"><span class="lbl">Dance</span><span class="sub">CMD 5</span></button>
+                <button class="cmd-btn" data-gait="SIT"><span class="lbl">Sit</span><span class="sub">CMD 6</span></button>
+                <button class="cmd-btn" data-gait="STOP"><span class="lbl">Stop</span><span class="sub">CMD 3</span></button>
+                <button class="cmd-btn" data-rtl="IDLE"><span class="lbl">Idle</span><span class="sub">CMD 0</span></button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">Runtime Verilog Gait Tuning</span><button class="tbtn primary" id="applyGaitParamsBtn">Apply to Verilog RTL</button></div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-family:Consolas,monospace;font-size:11px;">
+                <label>Stride Half-Amplitude (us): <strong id="lblStride">80 us</strong>
+                  <input type="range" id="gaitStride" min="40" max="115" step="5" value="80" style="width:100%;" />
+                </label>
+                <label>Cadence (Frames/Phase): <strong id="lblFreq">4 frames (1.56 Hz cycle)</strong>
+                  <input type="range" id="gaitPhaseFrames" min="2" max="8" step="1" value="4" style="width:100%;" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">8-Phase Timeline &amp; Active Legs</span><span id="gaitActiveLegs" style="font-family:Consolas,monospace;font-size:11px;color:#22d3ee;">ALL STANCE</span></div>
+              <div class="phase-strip" id="gaitPhaseStrip"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">PyBullet Physics Stability Evaluation</span><span id="gaitFramesEval" style="font-family:Consolas,monospace;font-size:11px;color:#8a9ab8;">0 frames</span></div>
+              <div class="grid-2">
+                <div class="kpi"><div class="k">Forward Travel ΔX</div><div class="v" id="geDist">0.000 m</div></div>
+                <div class="kpi"><div class="k">Max |Roll| / |Pitch|</div><div class="v" id="geRP">0.0° / 0.0°</div></div>
+                <div class="kpi"><div class="k">Avg / Min Height Z</div><div class="v" id="geH">0.00 / 0.00 m</div></div>
+                <div class="kpi"><div class="k">Avg Feet in Contact</div><div class="v" id="geFeet">0.00 / 4</div></div>
+                <div class="kpi"><div class="k">Max Foot Slip</div><div class="v" id="geSlip">0.000 m/s</div></div>
+                <div class="kpi"><div class="k">Penetration / Fall</div><div class="v" id="gePen">0.0 mm / NO</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 08. JARVIS ASSISTANT -->
+          <div class="section-view" id="sec-jarvis">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">08 · JARVIS Command Interface</div>
+                <div class="sec-sub">Safe local deterministic command parser — never bypasses safety controller or E-STOP</div>
+              </div>
+              <div class="pill cyan">TEXT COMMAND MODE (No Voice / Local Safe Parser)</div>
+            </div>
+
+            <div class="card">
+              <div id="jarvis-log">
+                <div class="j-entry"><strong>[JARVIS · TEXT MODE]</strong> Online. Every command maps strictly to a supported Verilog RTL, safety-gated manual, or dashboard action. Emergency stop always overrides all commands.</div>
+              </div>
+              <div class="jarvis-input-row">
+                <input type="text" id="jarvisInput" placeholder='Type a command, e.g. "Stand up", "Start walking", "Show PWM signals", "Explain the current fault"...' />
+                <button class="tbtn primary" id="jarvisSendBtn">Execute</button>
+              </div>
+              <div class="chip-row" id="jarvisChips">
+                <button class="tbtn" data-jcmd="Stand up">Stand up</button>
+                <button class="tbtn" data-jcmd="Start walking">Start walking</button>
+                <button class="tbtn" data-jcmd="Trot">Trot</button>
+                <button class="tbtn" data-jcmd="Wave">Wave</button>
+                <button class="tbtn" data-jcmd="Dance">Dance</button>
+                <button class="tbtn" data-jcmd="Sit down">Sit down</button>
+                <button class="tbtn" data-jcmd="Go to sleep">Go to sleep</button>
+                <button class="tbtn" data-jcmd="Stop the robot">Stop the robot</button>
+                <button class="tbtn" data-jcmd="Move front left leg">Move front left leg</button>
+                <button class="tbtn" data-jcmd="Show PWM signals">Show PWM signals</button>
+                <button class="tbtn" data-jcmd="Display joint angles">Display joint angles</button>
+                <button class="tbtn" data-jcmd="Run gait test">Run gait test</button>
+                <button class="tbtn" data-jcmd="Explain the current fault">Explain the current fault</button>
+                <button class="tbtn estop" data-jcmd="Emergency stop">Emergency stop</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 09. TESTING & DIAGNOSTICS -->
+          <div class="section-view" id="sec-testing">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">09 · Testing &amp; Diagnostics Centre</div>
+                <div class="sec-sub">Executes real Icarus Verilog compilation, testbench verification, CSV/VCD validation, and PyBullet bridge tests</div>
+              </div>
+              <button class="tbtn primary" id="runDiagBtn">Run All Diagnostics</button>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">Automated Verification Matrix</span>
+                <span id="diagMeta" style="font-family:Consolas,monospace;font-size:11px;color:#8a9ab8;">Status: Ready</span>
+              </div>
+              <table class="data-tbl">
+                <thead><tr><th>Test Suite</th><th>Status</th><th>Duration</th><th>Observed Output</th></tr></thead>
+                <tbody id="diagTableBody"></tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-title">Execution Log Output</span>
+                <span id="diagLogPath" style="font-family:Consolas,monospace;font-size:10px;color:#8a9ab8;">simulation/diagnostics/diagnostics_latest.log</span>
+              </div>
+              <pre class="log-box" id="diagLogBox">Click 'Run All Diagnostics' to execute real tests and capture output logs.</pre>
+            </div>
+          </div>
+
+          <!-- 10. SYSTEM ARCHITECTURE -->
+          <div class="section-view" id="sec-architecture">
+            <div class="sec-header">
+              <div>
+                <div class="sec-title">10 · System Architecture &amp; Hardware Roadmap</div>
+                <div class="sec-sub">Complete hardware-first Verilog RTL -> PyBullet simulation architecture</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-title">End-to-End Real Data Flow</span></div>
+              <div class="arch-flow">
+                <div class="arch-node"><div class="an-t">User / JARVIS</div><div class="an-s">4-bit CMD / E-STOP</div></div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-node"><div class="an-t">Verilog RTL</div><div class="an-s">safety_controller.v<br/>gait_controller.v<br/>8× servo_pwm.v</div></div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-node"><div class="an-t">Icarus Verilog</div><div class="an-s">tb_xeroton.v / vvp<br/>CSV + VCD (50 Hz)</div></div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-node"><div class="an-t">Python Bridge</div><div class="an-s">verilog_bridge.py<br/>Validation &amp; Clamping</div></div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-node"><div class="an-t">PyBullet 250 Hz</div><div class="an-s">xeroton.urdf<br/>Rigid-Body Physics</div></div>
+                <div class="arch-arrow">→</div>
+                <div class="arch-node"><div class="an-t">WebGL Studio</div><div class="an-s">Three.js + Scope<br/>50 Hz SSE Stream</div></div>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-h"><span class="card-title">8-DOF Joint &amp; PWM Channel Mapping</span></div>
+                <table class="data-tbl">
+                  <thead><tr><th>Ch</th><th>RTL</th><th>URDF Joint</th><th>Pulse Bounds</th><th>Angle Limits</th></tr></thead>
+                  <tbody>
+                    <tr><td>CH0</td><td>j0</td><td>front_left_hip</td><td>1050–1900 us</td><td>±0.95 rad</td></tr>
+                    <tr><td>CH1</td><td>j1</td><td>front_left_knee</td><td>1050–1950 us</td><td>±1.10 rad</td></tr>
+                    <tr><td>CH2</td><td>j2</td><td>front_right_hip</td><td>1050–1900 us</td><td>±0.95 rad</td></tr>
+                    <tr><td>CH3</td><td>j3</td><td>front_right_knee</td><td>1050–1950 us</td><td>±1.10 rad</td></tr>
+                    <tr><td>CH4</td><td>j4</td><td>rear_left_hip</td><td>1050–1900 us</td><td>±0.95 rad</td></tr>
+                    <tr><td>CH5</td><td>j5</td><td>rear_left_knee</td><td>1050–1950 us</td><td>±1.10 rad</td></tr>
+                    <tr><td>CH6</td><td>j6</td><td>rear_right_hip</td><td>1050–1900 us</td><td>±0.95 rad</td></tr>
+                    <tr><td>CH7</td><td>j7</td><td>rear_right_knee</td><td>1050–1950 us</td><td>±1.10 rad</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card">
+                <div class="card-h"><span class="card-title">FPGA vs. ESP32/PCA9685 Hardware Distinction</span></div>
+                <pre class="log-box" style="max-height:240px;">• FPGA Path (Direct RTL Synthesis):
+  - Synthesizes rtl/*.v directly into FPGA LUTs &amp; flip-flops
+  - Override CLK_HZ = 50_000_000 (FRAME_TICKS = 1,000,000, TICKS_PER_US = 50)
+  - 8 true parallel hardware PWM counters + 1-clock (20 ns) E-STOP
+  - Requires external 5–6V high-current BEC, level shifters, servo calibration &amp; IMU
+
+• ESP32 + PCA9685 Path (Separate MCU Architecture):
+  - ESP32 does NOT execute Verilog RTL directly
+  - FSM &amp; safety logic must be ported to C/C++ firmware
+  - PCA9685 generates 50 Hz PWM over I2C
+
+• Current Simulation Limitations:
+  - Open-loop flat-ground gaits (no physical MPU6050 / foot force sensors)
+  - Pulse-to-angle mapping requires physical servo endpoint calibration</pre>
+              </div>
+            </div>
+          </div>
+
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/lib/three.min.js"></script>
+<script src="/scene3d.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
